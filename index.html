@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ICICI Credit Card Transaction Analyser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0e101a;
+    --s1: #0d1120;
+    --s2: #121929;
+    --s3: #c6cbda;
+    --border: #1c2845;
+    --text: #dde4f4;
+    --muted: #4a5b80;
+    --accent: #4f8ef7;
+    --green: #2dd4a0;
+    --red: #f05252;
+    --gold: #f5b731;
+    --purple: #9d7ef5;
+    --orange: #fb923c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* HEADER */
+  .header {
+    background: var(--s1);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 10px; position: sticky; top: 0; z-index: 100;
+  }
+  .header-title { font-size: 18px; font-weight: 800; color: var(--accent); }
+  .header-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* BUTTON */
+  .btn-primary {
+    padding: 9px 18px; border-radius: 8px; border: none;
+    background: linear-gradient(135deg,#2dd4a0,#0fa870);
+    color: #fff; font-weight: 800; cursor: pointer; font-size: 14px;
+    font-family: 'Syne', sans-serif; transition: opacity .15s;
+  }
+  .btn-primary:hover { opacity: .88; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+  .btn-ghost {
+    padding: 9px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-weight: 700; cursor: pointer;
+    font-size: 14px; font-family: 'Syne', sans-serif;
+  }
+
+  /* MAIN */
+  .main { max-width: 980px; margin: 0 auto; padding: 20px 16px; }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 10px; font-weight: 800; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 12px;
+  }
+
+  /* TIER LABEL */
+  .tier-label {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1.1px; margin-bottom: 8px; padding-left: 2px;
+  }
+
+  /* CARD CHIP */
+  .card-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .card-chip {
+    cursor: pointer; border-radius: 12px; padding: 12px 14px;
+    min-width: 148px; max-width: 175px; flex: 0 0 auto;
+    background: var(--s2); border: 1px solid var(--border);
+    transition: all .18s; user-select: none;
+  }
+  .card-chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .card-chip.active { transform: translateY(-2px); }
+  .chip-name { font-size: 12px; font-weight: 800; line-height: 1.3; }
+  .chip-net { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .chip-fee { font-size: 11px; font-weight: 700; margin-top: 6px; }
+  .chip-rate { font-size: 10px; margin-top: 3px; }
+
+  /* CARD BANNER */
+  .card-banner {
+    border-radius: 14px; padding: 16px 20px; margin-bottom: 20px;
+    border: 1px solid;
+  }
+  .banner-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .banner-name { font-size: 17px; font-weight: 900; }
+  .banner-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .banner-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .banner-stat {
+    background: var(--s2); border-radius: 8px; padding: 7px 12px;
+    text-align: center; border: 1px solid var(--border);
+  }
+  .banner-stat-v { font-size: 14px; font-weight: 800; }
+  .banner-stat-l { font-size: 9px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; }
+  .benefit-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+  .benefit-tag {
+    font-size: 11px; padding: 3px 9px; border-radius: 20px;
+    font-weight: 600; border: 1px solid;
+  }
+  .banner-footer { margin-top: 9px; font-size: 11px; color: var(--muted); }
+
+  /* STATS GRID */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat-card {
+    background: var(--s1); border-radius: 10px; padding: 11px 13px;
+    border: 1px solid var(--border);
+  }
+  .stat-icon { font-size: 16px; }
+  .stat-val { font-size: 17px; font-weight: 900; margin-top: 4px; }
+  .stat-lbl { font-size: 9px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* FILTER */
+  .filter-row { margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .filter-row select {
+    background: var(--s2); border: 1px solid var(--border); border-radius: 7px;
+    padding: 7px 11px; color: var(--text); font-size: 12px; outline: none; font-family: 'Syne',sans-serif;
+  }
+  .filter-count { font-size: 12px; color: var(--muted); }
+
+  /* TRANSACTION CARD */
+  .txn-card { border-radius: 12px; overflow: hidden; margin-bottom: 10px; border: 1px solid var(--border); background: var(--s1); }
+  .txn-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 16px; cursor: pointer; gap: 10px; flex-wrap: wrap;
+  }
+  .txn-row:hover { background: var(--s2); }
+  .txn-desc { font-weight: 700; font-size: 14px; }
+  .txn-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .txn-badges { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+  .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 20px;
+    font-weight: 700; border: 1px solid;
+  }
+  .badge-gold { background: #f5b73120; color: var(--gold); border-color: #f5b73140; }
+  .badge-purple { background: #9d7ef520; color: var(--purple); border-color: #9d7ef540; }
+  .badge-red { background: #f0525220; color: var(--red); border-color: #f0525240; }
+  .badge-red-plain { background: #f0525215; color: var(--red); border-color: transparent; }
+  .txn-amount { font-weight: 900; font-size: 15px; color: #f87171; white-space: nowrap; }
+  .txn-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 0 3px; }
+  .txn-toggle { color: var(--muted); font-size: 12px; }
+
+  /* DETAIL PANEL */
+  .detail-panel { border-top: 1px solid var(--border); background: var(--s2); padding: 15px 18px; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .detail-section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 9px; }
+  .detail-row {
+    display: flex; justify-content: space-between; padding: 6px 0;
+    border-bottom: 1px solid var(--border); font-size: 12px; gap: 8px;
+  }
+  .detail-row-lbl { color: var(--muted); flex: 1; }
+  .detail-row-val { font-weight: 700; white-space: nowrap; }
+  .detail-total {
+    margin-top: 8px; padding: 7px 11px; border-radius: 7px;
+    font-size: 12px; display: flex; justify-content: space-between;
+  }
+  .net-row {
+    margin-top: 12px; padding: 10px 13px; background: var(--s1); border-radius: 9px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-size: 13px;
+  }
+  .net-lbl { color: var(--muted); }
+  .net-val { font-weight: 900; font-size: 14px; }
+  .mitc-notes { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .mitc-note { font-size: 11px; color: var(--muted); padding: 3px 0; }
+
+  /* EMPTY STATES */
+  .empty-card {
+    text-align: center; padding: 64px 20px; color: var(--muted);
+  }
+  .empty-card-icon { font-size: 48px; margin-bottom: 14px; }
+  .empty-card-title { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+  .empty-card-sub { font-size: 13px; margin-bottom: 20px; }
+
+  .empty-txn {
+    text-align: center; padding: 52px 20px; color: var(--muted);
+    background: var(--s1); border-radius: 14px; border: 1px dashed var(--border);
+    margin-bottom: 10px;
+  }
+  .empty-txn-icon { font-size: 38px; margin-bottom: 10px; }
+  .empty-txn-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; color: var(--text); }
+  .empty-txn-sub { font-size: 12px; margin-bottom: 16px; }
+
+  /* MODAL OVERLAY */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.88);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; padding: 16px;
+  }
+  .modal {
+    background: var(--s1); border: 1px solid var(--border); border-radius: 18px;
+    padding: 24px; width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto;
+  }
+  .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+  .modal-title { font-size: 16px; font-weight: 900; color: var(--accent); }
+  .modal-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .modal-close {
+    background: none; border: none; color: var(--muted);
+    font-size: 22px; cursor: pointer; line-height: 1; font-family: sans-serif;
+  }
+  .form-fields { display: flex; flex-direction: column; gap: 13px; }
+  .field-lbl { font-size: 10px; color: #4a5980; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: .9px; }
+  .field-inp {
+    width: 100%; background: var(--s2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; color: var(--text);
+    font-size: 14px; outline: none; font-family: 'Syne', sans-serif;
+  }
+  .field-inp:focus { border-color: var(--accent); }
+  .flags-box { background: var(--s2); border-radius: 10px; padding: 11px 13px; display: flex; flex-direction: column; gap: 10px; }
+  .flags-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 2px; }
+  .flag-row { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; }
+  .flag-row input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--accent); }
+  .preview-box { background: var(--s2); border-radius: 10px; padding: 12px 14px; border: 1px solid var(--border); }
+  .preview-title { font-size: 11px; font-weight: 800; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .8px; }
+  .preview-badges { display: flex; gap: 7px; flex-wrap: wrap; }
+  .error-msg { color: var(--red); font-size: 13px; }
+  .form-btns { display: flex; gap: 10px; margin-top: 4px; }
+
+  /* LATE FEE TABLE */
+  .late-fee-section { margin-top: 16px; }
+  .late-fee-title { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; }
+  .late-fee-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .late-fee-table th { text-align: left; padding: 6px 10px; color: var(--muted); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .6px; border-bottom: 1px solid var(--border); }
+  .late-fee-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+  .late-fee-table tr:last-child td { border-bottom: none; }
+  .late-fee-table tr:hover td { background: var(--s3); }
+
+  @media(max-width:540px){
+    .detail-grid { grid-template-columns: 1fr; }
+    .banner-stats { gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-title">🏦 ICICI Credit Card Transaction Analyser</div>
+    <div class="header-sub">Choose your card · Enter transactions · See exact benefits &amp; charges per MITC</div>
+  </div>
+  <button class="btn-primary" id="btnAddTxn" style="display:none" onclick="openModal()">+ Add Transaction</button>
+</div>
+
+<div class="main">
+
+  <!-- STEP 1: CARD SELECTOR -->
+  <div id="cardSelector" style="margin-bottom:24px">
+    <div class="section-label">Step 1 — Select Your ICICI Credit Card Variant</div>
+    <div id="tierList"></div>
+  </div>
+
+  <!-- CARD BANNER -->
+  <div id="cardBanner" style="display:none"></div>
+
+  <!-- STEP 2: TRANSACTIONS -->
+  <div id="step2" style="display:none">
+    <div class="section-label">Step 2 — Enter &amp; Analyse Transactions</div>
+    <div id="statsGrid" style="display:none"></div>
+    <div class="filter-row" id="filterRow" style="display:none">
+      <select id="filterCat" onchange="renderTxns()">
+        <option value="all">All Categories</option>
+      </select>
+      <span class="filter-count" id="filterCount"></span>
+    </div>
+    <div id="txnList"></div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty-card" id="emptyState">
+    <div class="empty-card-icon">💳</div>
+    <div class="empty-card-title">Select a Card to Begin</div>
+    <div class="empty-card-sub">Choose any ICICI Bank card variant above to track and analyse transactions</div>
+  </div>
+
+</div>
+
+<!-- ADD TRANSACTION MODAL -->
+<div class="modal-overlay" id="modalOverlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">+ New Transaction</div>
+        <div class="modal-sub" id="modalCardLabel"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-fields">
+      <div>
+        <div class="field-lbl">Date</div>
+        <input type="date" class="field-inp" id="fDate"/>
+      </div>
+      <div>
+        <div class="field-lbl">Description *</div>
+        <input type="text" class="field-inp" id="fDesc" placeholder="e.g. Zomato Dinner, HP Petrol ₹1500, Amazon Order…"/>
+      </div>
+      <div>
+        <div class="field-lbl">Amount (₹) *</div>
+        <input type="number" class="field-inp" id="fAmount" placeholder="0.00" min="1" oninput="updatePreview()"/>
+      </div>
+      <div>
+        <div class="field-lbl">Category *</div>
+        <select class="field-inp" id="fCategory" onchange="updatePreview(); updateFlags()"></select>
+      </div>
+      <div class="flags-box" id="flagsBox">
+        <div class="flags-title">Transaction Flags</div>
+        <div id="flagsContent"></div>
+      </div>
+      <div class="preview-box" id="previewBox" style="display:none">
+        <div class="preview-title">🔍 Live Reward Preview</div>
+        <div id="previewContent"></div>
+      </div>
+      <div class="error-msg" id="formErr" style="display:none"></div>
+      <div class="form-btns">
+        <button class="btn-primary" style="flex:1" onclick="saveTxn()">✅ Save Transaction</button>
+        <button class="btn-ghost" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════════
+function lateFeeSlabs(){
+  return [
+    {upTo:100,fee:0},{upTo:500,fee:100},{upTo:5000,fee:400},
+    {upTo:10000,fee:500},{upTo:25000,fee:700},{upTo:50000,fee:800},
+    {above:50000,fee:1200},
+  ];
+}
+
+const CARDS={
+  coral_contactless:{
+    id:"coral_contactless",name:"Coral Contactless",tier:"Classic",network:"Visa/MC",
+    gradient:["#b06ab3","#4568dc"],annualFee:500,feeWaiver:125000,
+    rewardRate:2,fuelRate:1,welcomePts:500,pointValue:0.25,
+    fuelWaiverMin:500,fuelWaiverMax:4000,fuelWaiverCap:100,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:3.5,
+    lounge:{domestic:"2 per quarter (Visa/MC domestic lounges)",intl:"Not included",notes:"Via Visa/Mastercard lounge program. Valid at participating domestic airports."},
+    upiCashback:0,upiCashbackCap:0,isRuPay:false,
+    exclusions:["fuel_surcharge","emi","cash_advance","wallet_load"],
+    bmsOffer:{type:"discount",discountPct:25,maxDiscount:100,minTxn:200,cappedTickets:2,perMonth:true,
+      desc:"25% off (max ₹100/txn) on up to 2 movie tickets per month via BookMyShow"},
+    specialBenefits:["1% fuel surcharge waiver ₹500–₹4000","BMS: 25% off max ₹100 (2 tickets/month)","Contactless tap & pay"],
+    latePayment:lateFeeSlabs(),
+  },
+  coral_rupay:{
+    id:"coral_rupay",name:"Coral RuPay",tier:"Classic",network:"RuPay",
+    gradient:["#11998e","#38ef7d"],annualFee:500,feeWaiver:125000,
+    rewardRate:2,fuelRate:1,welcomePts:500,pointValue:0.25,
+    fuelWaiverMin:500,fuelWaiverMax:4000,fuelWaiverCap:100,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:0,
+    lounge:{domestic:"2 per quarter (RuPay domestic lounges)",intl:"Not included",notes:"Via RuPay lounge program at participating domestic airports."},
+    upiCashback:1,upiCashbackCap:100,isRuPay:true,
+    exclusions:["emi","cash_advance","wallet_load"],
+    bmsOffer:{type:"discount",discountPct:25,maxDiscount:100,minTxn:200,cappedTickets:2,perMonth:true,
+      desc:"25% off (max ₹100/txn) on up to 2 movie tickets per month via BookMyShow"},
+    specialBenefits:["1% UPI cashback (max ₹100/month)","No foreign txn fee","BMS: 25% off max ₹100 (2 tickets/month)","RuPay PayWave contactless"],
+    latePayment:lateFeeSlabs(),
+  },
+  platinum_chip:{
+    id:"platinum_chip",name:"Platinum Chip",tier:"Classic",network:"Visa",
+    gradient:["#bdc3c7","#2c3e50"],annualFee:199,feeWaiver:100000,
+    rewardRate:2,fuelRate:1,welcomePts:0,pointValue:0.25,
+    fuelWaiverMin:500,fuelWaiverMax:4000,fuelWaiverCap:100,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:3.5,
+    lounge:{domestic:"Not included",intl:"Not included",notes:"No lounge benefit on this entry-level card."},
+    upiCashback:0,upiCashbackCap:0,isRuPay:false,
+    exclusions:["fuel_surcharge","emi","cash_advance","wallet_load"],
+    bmsOffer:null,
+    specialBenefits:["Low annual fee ₹199","1% fuel surcharge waiver","Basic rewards on all spends"],
+    latePayment:lateFeeSlabs(),
+  },
+  amazon_pay:{
+    id:"amazon_pay",name:"Amazon Pay",tier:"Co-brand",network:"Visa",
+    gradient:["#ff9900","#232f3e"],annualFee:0,feeWaiver:0,
+    rewardRate:1,fuelRate:1,welcomePts:0,pointValue:1,
+    cashbackAmazonPrime:5,cashbackAmazonNonPrime:3,cashbackOthers:2,cashbackFuel:1,
+    fuelWaiverMin:0,fuelWaiverMax:0,fuelWaiverCap:0,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:3.5,
+    lounge:{domestic:"Not included",intl:"Not included",notes:"No lounge benefit on this co-brand card."},
+    upiCashback:0,upiCashbackCap:0,isRuPay:false,
+    exclusions:["emi","cash_advance","wallet_load","fuel"],
+    bmsOffer:null,
+    specialBenefits:["5% back on Amazon (Prime)","3% back on Amazon (non-Prime)","2% back on Amazon Pay partners","1% on all others","Lifetime free card"],
+    latePayment:lateFeeSlabs(),isCashback:true,
+  },
+  mmt_platinum:{
+    id:"mmt_platinum",name:"MakeMyTrip Platinum",tier:"Co-brand",network:"Visa",
+    gradient:["#ee0979","#ff6a00"],annualFee:999,feeWaiver:200000,
+    rewardRate:0,fuelRate:0,welcomePts:0,pointValue:0,
+    mmtMyPoints:{mmt:6,travel:4,dining:2,others:1.5},myPointValue:0.45,
+    fuelWaiverMin:500,fuelWaiverMax:4000,fuelWaiverCap:100,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:3.5,
+    lounge:{domestic:"4 complimentary per year (Visa domestic)",intl:"Not included",notes:"4 free domestic airport lounge visits per year via Visa lounge program."},
+    upiCashback:0,upiCashbackCap:0,isRuPay:false,
+    exclusions:["emi","cash_advance","wallet_load"],
+    bmsOffer:null,
+    specialBenefits:["6 MyPoints/₹100 on MMT","4 MyPoints on other travel","2 MyPoints on dining","Welcome voucher ₹2,000 MMT","4 lounge visits/year"],
+    latePayment:lateFeeSlabs(),isMMT:true,
+  },
+  rubyx_visa:{
+    id:"rubyx_visa",name:"Rubyx Visa",tier:"Premium",network:"Visa",
+    gradient:["#9d50bb","#6e48aa"],annualFee:2000,feeWaiver:200000,
+    rewardRate:2,fuelRate:1,welcomePts:2500,pointValue:0.25,
+    fuelWaiverMin:500,fuelWaiverMax:4000,fuelWaiverCap:100,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:3.5,
+    lounge:{domestic:"2 complimentary per quarter (Visa domestic)",intl:"Not included",notes:"8 free domestic lounge visits per year (2/quarter) via Visa. Additional visits chargeable."},
+    upiCashback:0,upiCashbackCap:0,isRuPay:false,
+    exclusions:["fuel_surcharge","emi","cash_advance","wallet_load"],
+    bmsOffer:{type:"buyonegetone",maxDiscount:250,minTxn:0,cappedTickets:2,perMonth:true,
+      desc:"Buy 1 Get 1 Free on movie tickets (max ₹250 off) — 2 tickets per month via BookMyShow"},
+    specialBenefits:["2 domestic lounges/quarter (8/year)","2 pts/₹100","Welcome 2,500 pts","BMS: Buy 1 Get 1 Free (max ₹250, 2/month)","Golf privileges"],
+    latePayment:lateFeeSlabs(),
+  },
+  sapphiro_visa:{
+    id:"sapphiro_visa",name:"Sapphiro Visa Infinite",tier:"Super Premium",network:"Visa Infinite",
+    gradient:["#1a6bdb","#00c6ff"],annualFee:3500,feeWaiver:600000,
+    rewardRate:4,fuelRate:2,welcomePts:5000,pointValue:0.25,
+    fuelWaiverMin:500,fuelWaiverMax:4000,fuelWaiverCap:200,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:2.0,
+    lounge:{domestic:"Unlimited complimentary (Visa Infinite domestic)",intl:"4 per year (Priority Pass / Visa Infinite intl)",notes:"Unlimited domestic lounge access. 4 international lounge visits per year via Priority Pass."},
+    upiCashback:0,upiCashbackCap:0,isRuPay:false,
+    exclusions:["emi","cash_advance","wallet_load"],
+    bmsOffer:{type:"buyonegetone",maxDiscount:500,minTxn:0,cappedTickets:4,perMonth:true,
+      desc:"Buy 1 Get 1 Free on movie tickets (max ₹500 off) — up to 4 tickets per month via BookMyShow"},
+    specialBenefits:["4 pts/₹100 (2× on intl)","Unlimited domestic lounge","4 intl lounge/year (Priority Pass)","BMS: Buy 1 Get 1 Free (max ₹500, 4/month)","Golf privileges","Concierge","Welcome 5,000 pts"],
+    latePayment:lateFeeSlabs(),
+  },
+  emeralde_amex:{
+    id:"emeralde_amex",name:"Emeralde Private Metal",tier:"Ultra Premium",network:"Amex",
+    gradient:["#c9a84c","#0f2027"],annualFee:12000,feeWaiver:1500000,
+    rewardRate:6,fuelRate:2,welcomePts:12000,pointValue:0.25,
+    fuelWaiverMin:500,fuelWaiverMax:4000,fuelWaiverCap:400,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:1.5,
+    lounge:{domestic:"Unlimited complimentary (Amex Centurion + tie-ups)",intl:"Unlimited (Centurion + Priority Pass — up to 12 guest visits/year)",notes:"Unlimited domestic & international lounge access via Amex Centurion network and Priority Pass. 12 complimentary guest passes per year for international lounges."},
+    upiCashback:0,upiCashbackCap:0,isRuPay:false,
+    exclusions:["emi","cash_advance","wallet_load"],
+    bmsOffer:{type:"complimentary",maxDiscount:500,minTxn:0,cappedTickets:4,perMonth:true,
+      desc:"2 complimentary movie tickets per month via BookMyShow (up to ₹500 value each)"},
+    specialBenefits:["6 pts/₹100 (highest)","Metal card","Unlimited lounge worldwide (incl. intl guest passes)","BMS: 2 complimentary tickets/month (₹500 each)","Annual travel credit ₹5,000","Golf unlimited","Dedicated RM","Forex markup 1.5% only"],
+    latePayment:lateFeeSlabs(),
+  },
+  hpcl_coral:{
+    id:"hpcl_coral",name:"HPCL Coral",tier:"Co-brand",network:"Visa",
+    gradient:["#f7971e","#ffd200"],annualFee:199,feeWaiver:50000,
+    rewardRate:2,fuelRate:0,welcomePts:0,pointValue:0.25,
+    hpclCashback:2.5,
+    fuelWaiverMin:400,fuelWaiverMax:4000,fuelWaiverCap:100,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:3.5,
+    lounge:{domestic:"Not included",intl:"Not included",notes:"No lounge benefit on this co-brand fuel card."},
+    upiCashback:0,upiCashbackCap:0,isRuPay:false,
+    exclusions:["emi","cash_advance","wallet_load"],
+    bmsOffer:null,
+    specialBenefits:["2.5% cashback at HPCL pumps","Fuel surcharge waiver at HPCL","2 pts/₹100 non-fuel","Low annual fee ₹199"],
+    latePayment:lateFeeSlabs(),isHPCL:true,
+  },
+  business_advantage:{
+    id:"business_advantage",name:"Business Advantage",tier:"Business",network:"Visa",
+    gradient:["#141e30","#4a90d9"],annualFee:1000,feeWaiver:300000,
+    rewardRate:4,fuelRate:2,welcomePts:1000,pointValue:0.25,
+    fuelWaiverMin:500,fuelWaiverMax:4000,fuelWaiverCap:100,
+    interest:3.40,cashAdvFee:{pct:2.5,min:500},overlimit:500,foreignTxn:3.5,
+    lounge:{domestic:"4 complimentary per year (Visa domestic)",intl:"Not included",notes:"4 free domestic lounge visits per year for primary cardholder via Visa program."},
+    upiCashback:0,upiCashbackCap:0,isRuPay:false,
+    exclusions:["emi","cash_advance","wallet_load"],
+    bmsOffer:null,
+    specialBenefits:["4 pts/₹100 on biz spends","GST invoice management","Spend analytics","Employee card facility","4 domestic lounge visits/year"],
+    latePayment:lateFeeSlabs(),
+  },
+};
+
+const CATEGORIES=[
+  {key:"shopping",label:"Shopping",icon:"🛍️"},
+  {key:"amazon",label:"Amazon Purchase",icon:"📦",isAmazon:true},
+  {key:"food",label:"Food & Dining",icon:"🍽️"},
+  {key:"groceries",label:"Groceries",icon:"🛒"},
+  {key:"fuel_hpcl",label:"Fuel – HPCL Pump",icon:"⛽",isFuel:true,isHPCL:true},
+  {key:"fuel_other",label:"Fuel – Other Pump",icon:"⛽",isFuel:true,isHPCL:false},
+  {key:"travel_mmt",label:"Travel – MMT Booking",icon:"✈️",isMMT:true},
+  {key:"travel_other",label:"Travel – Other",icon:"🚌"},
+  {key:"utilities",label:"Bills & Utilities",icon:"💡"},
+  {key:"recharge",label:"Mobile Recharge",icon:"📱"},
+  {key:"health",label:"Health & Pharma",icon:"🏥"},
+  {key:"entertainment",label:"Entertainment",icon:"🎬"},
+  {key:"emi",label:"EMI Payment",icon:"📋",isEMI:true},
+  {key:"wallet_load",label:"Wallet Load",icon:"👛",isWallet:true},
+  {key:"cash_advance",label:"Cash Advance",icon:"💵",isCashAdv:true},
+  {key:"international",label:"International Spend",icon:"🌍",isIntl:true},
+  {key:"other",label:"Other",icon:"📦"},
+];
+const CAT_MAP=Object.fromEntries(CATEGORIES.map(c=>[c.key,c]));
+const TIERS=["Classic","Co-brand","Premium","Super Premium","Ultra Premium","Business"];
+
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let selectedCardId=null;
+let transactions=[];
+let expandedId=null;
+let filterCat="all";
+
+function card(){return selectedCardId?CARDS[selectedCardId]:null;}
+
+// ═══════════════════════════════════════════════════════════
+//  BENEFIT CALCULATOR
+// ═══════════════════════════════════════════════════════════
+function calcBenefits(c,txn){
+  const{amount,category,isUPI,isPrime}=txn;
+  const cat=CAT_MAP[category]||CAT_MAP.other;
+  const res={
+    rewards:0,rewardType:"PAYBACK Points",
+    cashback:0,surcharge:0,surchargeWaived:0,
+    cashAdvanceFee:0,foreignTxnFee:0,gstOnCharges:0,
+    totalBenefit:0,totalCharges:0,
+    exclusionReason:null,
+    breakdown:[],chargesBreakdown:[],mitcNotes:[],
+  };
+
+  // CASH ADVANCE
+  if(cat.isCashAdv){
+    const fee=Math.max(amount*c.cashAdvFee.pct/100,c.cashAdvFee.min);
+    const gst=+(fee*0.18).toFixed(2);
+    res.cashAdvanceFee=+fee.toFixed(2);
+    res.gstOnCharges=gst;
+    res.totalCharges=+(fee+gst).toFixed(2);
+    res.exclusionReason="Cash advance: no rewards, high fees apply";
+    res.chargesBreakdown.push(
+      {label:`Cash Advance Fee (${c.cashAdvFee.pct}%, min ₹${c.cashAdvFee.min})`,val:`-₹${fee.toFixed(2)}`,neg:true},
+      {label:"GST @ 18% on fee",val:`-₹${gst.toFixed(2)}`,neg:true},
+      {label:"Interest rate",val:`${c.interest}% per month from withdrawal date`,neg:true},
+    );
+    res.mitcNotes.push("No interest-free period on cash advances. Interest accrues from day of withdrawal.");
+    return res;
+  }
+
+  // WALLET LOAD
+  if(cat.isWallet){
+    res.exclusionReason="Wallet loads excluded from reward points (MITC)";
+    res.breakdown.push({label:"Wallet Load Exclusion",val:"0 pts per MITC",neg:true});
+    res.mitcNotes.push("Loading Paytm/PhonePe wallets via credit card does not earn reward points on any ICICI card.");
+    return res;
+  }
+
+  // EMI
+  if(cat.isEMI){
+    const pf=Math.max(amount*0.01,199);
+    const gst=+(pf*0.18).toFixed(2);
+    res.exclusionReason="EMI transactions excluded from reward points";
+    res.totalCharges=+(pf+gst).toFixed(2);
+    res.chargesBreakdown.push(
+      {label:"EMI Processing Fee (~1%, min ₹199)",val:`-₹${pf.toFixed(2)}`,neg:true},
+      {label:"GST @ 18%",val:`-₹${gst.toFixed(2)}`,neg:true},
+    );
+    res.mitcNotes.push("EMI conversion: no reward points earned. Pre-closure penalty may apply.");
+    return res;
+  }
+
+  // INTERNATIONAL
+  if(cat.isIntl){
+    const fxFee=+(amount*c.foreignTxn/100).toFixed(2);
+    const gst=+(fxFee*0.18).toFixed(2);
+    res.foreignTxnFee=fxFee;
+    res.gstOnCharges=gst;
+    res.totalCharges=+(fxFee+gst).toFixed(2);
+    res.chargesBreakdown.push(
+      {label:`Forex Markup (${c.foreignTxn}%)`,val:`-₹${fxFee.toFixed(2)}`,neg:true},
+      {label:"GST @ 18% on markup",val:`-₹${gst.toFixed(2)}`,neg:true},
+    );
+    const rate=c.id==="sapphiro_visa"?c.rewardRate*2:c.rewardRate;
+    const pts=Math.floor(amount/100)*rate;
+    if(pts>0){
+      res.rewards=pts;
+      res.breakdown.push({label:`Reward Points (${rate} pts/₹100${c.id==="sapphiro_visa"?" — 2× intl bonus":""})`,val:`+${pts} pts = ₹${+(pts*c.pointValue).toFixed(2)}`});
+    }
+    if(c.foreignTxn===0) res.mitcNotes.push("No forex markup on this card — excellent for international use!");
+    else res.mitcNotes.push(`Forex markup ${c.foreignTxn}% + 18% GST. Plan foreign spends accordingly.`);
+    if(c.id==="sapphiro_visa") res.mitcNotes.push("Sapphiro earns 2× points on international transactions per MITC.");
+    res.totalBenefit=+(pts*(c.pointValue||0)).toFixed(2);
+    return res;
+  }
+
+  // FUEL
+  if(cat.isFuel){
+    const surcharge=+(amount*0.01).toFixed(2);
+    const gstSurcharge=+(surcharge*0.18).toFixed(2);
+    res.surcharge=surcharge;
+    res.chargesBreakdown.push(
+      {label:"Fuel Surcharge (1%)",val:`-₹${surcharge.toFixed(2)}`,neg:true},
+      {label:"GST @ 18% on surcharge",val:`-₹${gstSurcharge.toFixed(2)}`,neg:true},
+    );
+    if(c.isHPCL&&cat.isHPCL){
+      const cb=+(amount*c.hpclCashback/100).toFixed(2);
+      res.cashback=cb;
+      res.surchargeWaived=surcharge;
+      res.breakdown.push(
+        {label:`HPCL Cashback (${c.hpclCashback}%)`,val:`+₹${cb.toFixed(2)}`},
+        {label:"Surcharge Waiver (HPCL benefit)",val:`+₹${surcharge.toFixed(2)}`},
+      );
+      res.mitcNotes.push("HPCL Coral: 2.5% cashback + full surcharge waiver exclusively at HPCL pumps.");
+      res.totalBenefit=+(cb+surcharge).toFixed(2);
+      res.totalCharges=+gstSurcharge.toFixed(2);
+      return res;
+    }
+    const waivable=c.fuelWaiverMin>0&&amount>=c.fuelWaiverMin&&amount<=c.fuelWaiverMax;
+    if(waivable){
+      res.surchargeWaived=Math.min(surcharge,c.fuelWaiverCap);
+      res.breakdown.push({label:`Surcharge Waiver (₹${c.fuelWaiverMin}–₹${c.fuelWaiverMax})`,val:`+₹${res.surchargeWaived.toFixed(2)}`});
+    }else if(c.fuelWaiverMin>0){
+      const reason=amount<c.fuelWaiverMin?`Below ₹${c.fuelWaiverMin} — not eligible`:`Above ₹${c.fuelWaiverMax} — not eligible`;
+      res.chargesBreakdown.push({label:`No Waiver: ${reason}`,val:"₹0 saved",neg:true});
+    }
+    if(c.fuelRate>0){
+      const fpts=Math.floor(amount/100)*c.fuelRate;
+      res.rewards=fpts;
+      res.breakdown.push({label:`Reward Points (${c.fuelRate} pt/₹100 — fuel rate)`,val:`+${fpts} pts = ₹${+(fpts*c.pointValue).toFixed(2)}`});
+      res.mitcNotes.push(`Fuel earn rate ${c.fuelRate} pt/₹100 vs ${c.rewardRate} pts/₹100 for normal spends.`);
+    }else if(c.id==="hpcl_coral"){
+      const fpts=Math.floor(amount/100)*2;
+      res.rewards=fpts;
+      res.breakdown.push({label:"Non-HPCL fuel pump — Regular Reward Points (2 pts/₹100)",val:`+${fpts} pts = ₹${+(fpts*c.pointValue).toFixed(2)}`});
+    }
+    if(c.fuelWaiverMin>0) res.mitcNotes.push(`Monthly surcharge waiver cap: ₹${c.fuelWaiverCap} across all fuel transactions.`);
+    res.totalCharges=+(surcharge-res.surchargeWaived+gstSurcharge).toFixed(2);
+    res.totalBenefit=+(res.surchargeWaived+res.rewards*c.pointValue).toFixed(2);
+    return res;
+  }
+
+  // AMAZON CO-BRAND
+  if(c.isCashback&&c.id==="amazon_pay"){
+    let cbPct=cat.isAmazon?(isPrime?c.cashbackAmazonPrime:c.cashbackAmazonNonPrime):c.cashbackOthers;
+    const cb=+(amount*cbPct/100).toFixed(2);
+    res.cashback=cb;
+    res.rewardType="Amazon Pay Balance";
+    res.breakdown.push({label:`Amazon Pay Cashback (${cbPct}%)`,val:`+₹${cb.toFixed(2)} credited to Amazon Pay`});
+    if(cat.isAmazon) res.mitcNotes.push(isPrime?"Prime members earn 5% on Amazon spends.":"Non-Prime earns 3%. Upgrade to Prime for +2% extra.");
+    res.mitcNotes.push("Cashback credited as Amazon Pay balance within 2 billing cycles. No minimum spend.");
+    res.totalBenefit=cb;
+    return res;
+  }
+
+  // MMT CO-BRAND
+  if(c.isMMT){
+    const rates=c.mmtMyPoints;
+    let myRate=cat.isMMT?rates.mmt:(category==="travel_other"?rates.travel:(category==="food"?rates.dining:rates.others));
+    const myPts=+(amount*myRate/100).toFixed(2);
+    const val=+(myPts*c.myPointValue).toFixed(2);
+    res.rewards=myPts;
+    res.rewardType="MMT MyPoints";
+    res.breakdown.push({label:`MyPoints @ ${myRate}/₹100 (${cat.isMMT?"MMT booking":category})`,val:`+${myPts.toFixed(2)} MyPoints ≈ ₹${val}`});
+    res.mitcNotes.push(`1 MyPoint ≈ ₹${c.myPointValue} on MakeMyTrip for flights/hotels. Value varies by redemption type.`);
+    res.totalBenefit=val;
+    return res;
+  }
+
+  // RUPAY UPI CASHBACK
+  if(c.isRuPay&&isUPI&&c.upiCashback>0){
+    const cb=Math.min(+(amount*c.upiCashback/100).toFixed(2),c.upiCashbackCap);
+    res.cashback=cb;
+    res.breakdown.push({label:`UPI Cashback (${c.upiCashback}%, cap ₹${c.upiCashbackCap}/mo)`,val:`+₹${cb.toFixed(2)}`});
+    res.mitcNotes.push("RuPay CC UPI cashback capped at ₹100/month across all UPI transactions.");
+  }
+
+  // BOOKMYSHOW OFFER (Entertainment category)
+  if(cat.key==="entertainment"&&c.bmsOffer){
+    const bms=c.bmsOffer;
+    if(bms.type==="discount"){
+      const rawDiscount=+(amount*bms.discountPct/100).toFixed(2);
+      const discount=Math.min(rawDiscount,bms.maxDiscount);
+      if(amount>=bms.minTxn){
+        res.cashback+=discount;
+        res.breakdown.push({label:`BookMyShow Discount (${bms.discountPct}%, max ₹${bms.maxDiscount}/txn)`,val:`+₹${discount.toFixed(2)}`});
+        res.mitcNotes.push(`BMS offer: ${bms.desc}`);
+        res.mitcNotes.push(`Cap applies per transaction. Max ${bms.cappedTickets} tickets per month. Offer valid on movie tickets only via BookMyShow app/website.`);
+      }else{
+        res.breakdown.push({label:`BookMyShow Discount (min ₹${bms.minTxn} required)`,val:"Not eligible — below minimum"});
+        res.mitcNotes.push(`BMS: Minimum transaction of ₹${bms.minTxn} required for discount.`);
+      }
+    }else if(bms.type==="buyonegetone"){
+      const discount=Math.min(amount/2,bms.maxDiscount);
+      res.cashback+=+discount.toFixed(2);
+      res.breakdown.push({label:`BookMyShow Buy 1 Get 1 (max ₹${bms.maxDiscount} off)`,val:`+₹${discount.toFixed(2)} saved`});
+      res.mitcNotes.push(`BMS offer: ${bms.desc}`);
+      res.mitcNotes.push(`1 complementary ticket per transaction (max ${bms.cappedTickets} tickets/month). Discount = cost of cheaper ticket, capped at ₹${bms.maxDiscount}.`);
+    }else if(bms.type==="complimentary"){
+      const discount=Math.min(amount,bms.maxDiscount);
+      res.cashback+=+discount.toFixed(2);
+      res.breakdown.push({label:`BookMyShow Complimentary Ticket (max ₹${bms.maxDiscount} each)`,val:`+₹${discount.toFixed(2)} value`});
+      res.mitcNotes.push(`BMS offer: ${bms.desc}`);
+      res.mitcNotes.push(`Up to ${bms.cappedTickets} complimentary tickets per month. Each ticket capped at ₹${bms.maxDiscount}. Booking must be done via ICICI Bank's BMS offer link.`);
+    }
+  }else if(cat.key==="entertainment"&&!c.bmsOffer){
+    res.mitcNotes.push("No BookMyShow offer on this card variant. Standard reward points apply.");
+  }
+
+  // STANDARD PAYBACK POINTS
+  const pts=Math.floor(amount/100)*c.rewardRate;
+  if(pts>0){
+    res.rewards+=pts;
+    res.breakdown.push({label:`PAYBACK Points (${c.rewardRate} pts per ₹100)`,val:`+${pts} pts = ₹${+(pts*c.pointValue).toFixed(2)}`});
+  }else if(c.rewardRate>0&&amount<100){
+    res.breakdown.push({label:"Amount below ₹100",val:"0 pts (minimum ₹100 per reward point)"});
+  }
+
+  res.mitcNotes.push(`Points expire 36 months from earn date. Min 500 pts for redemption. 1 pt = ₹${c.pointValue}.`);
+  if(c.rewardRate===0&&!res.cashback&&!res.rewards){
+    res.breakdown.push({label:"No PAYBACK pts for this card type",val:"See cashback/MyPoints earned above"});
+  }
+  const ptVal=+(res.rewards*(c.pointValue||0)).toFixed(2);
+  res.totalBenefit=+(ptVal+res.cashback+res.surchargeWaived).toFixed(2);
+  return res;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER HELPERS
+// ═══════════════════════════════════════════════════════════
+function fmt(n){return typeof n==="number"&&!Number.isInteger(n)?n.toFixed(1):n;}
+
+function renderCardSelector(){
+  const el=document.getElementById('tierList');
+  let html='';
+  TIERS.forEach(tier=>{
+    const cards=Object.values(CARDS).filter(c=>c.tier===tier);
+    if(!cards.length) return;
+    html+=`<div style="margin-bottom:14px">
+      <div class="tier-label">▸ ${tier}</div>
+      <div class="card-grid">`;
+    cards.forEach(c=>{
+      const active=selectedCardId===c.id;
+      const bg=active?`linear-gradient(135deg,${c.gradient[0]},${c.gradient[1]||c.gradient[0]})`:getComputedStyle(document.documentElement).getPropertyValue('--s2').trim();
+      const nameCol=active?"#fff":"";
+      const netCol=active?"rgba(255,255,255,0.65)":"";
+      const feeCol=active?"rgba(255,255,255,0.9)":c.gradient[0];
+      const rateCol=active?"rgba(255,255,255,0.65)":"";
+      const rate=c.isMMT?`${c.mmtMyPoints.mmt} MyPts/₹100 MMT`:c.isCashback?`${c.cashbackAmazonPrime}% on Amazon`:c.isHPCL?`${c.hpclCashback}% at HPCL`:`${c.rewardRate} pts/₹100`;
+      html+=`<div class="card-chip${active?" active":""}"
+        style="background:${active?`linear-gradient(135deg,${c.gradient[0]},${c.gradient[1]||c.gradient[0]})`:'var(--s2)'};
+               border:${active?`2px solid ${c.gradient[0]}88`:'1px solid var(--border)'};
+               box-shadow:${active?`0 4px 18px ${c.gradient[0]}44`:'none'}"
+        onclick="selectCard('${c.id}')">
+        <div class="chip-name" style="color:${nameCol||'var(--text)'}">${c.name}</div>
+        <div class="chip-net" style="color:${netCol||'var(--muted)'}">${c.network}</div>
+        <div class="chip-fee" style="color:${feeCol}">${c.annualFee===0?"Lifetime Free":`₹${c.annualFee}/yr`}</div>
+        <div class="chip-rate" style="color:${rateCol||'var(--muted)'}">${rate}</div>
+      </div>`;
+    });
+    html+='</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+function renderCardBanner(){
+  const c=card();
+  const el=document.getElementById('cardBanner');
+  if(!c){el.style.display='none';return;}
+  const earnLabel=c.isMMT?`${c.mmtMyPoints.mmt} MyPts`:c.isCashback?`${c.cashbackAmazonPrime}% CB`:c.isHPCL?`${c.hpclCashback}% HPCL`:`${c.rewardRate}pts/₹100`;
+  const fxLabel=c.foreignTxn===0?"Nil":`${c.foreignTxn}%`;
+  const feeWaiverLabel=c.feeWaiver===0?"N/A":`₹${(c.feeWaiver/1000).toFixed(0)}K`;
+  const statsHtml=[
+    {l:"Annual Fee",v:c.annualFee===0?"FREE":`₹${c.annualFee}`},
+    {l:"Earn Rate",v:earnLabel},
+    {l:"Interest/mo",v:`${c.interest}%`},
+    {l:"Forex Markup",v:fxLabel},
+    {l:"Welcome Pts",v:c.welcomePts?`${c.welcomePts} pts`:"None"},
+    {l:"Over-limit Fee",v:`₹${c.overlimit}`},
+  ].map(s=>`<div class="banner-stat"><div class="banner-stat-v" style="color:${c.gradient[0]}">${s.v}</div><div class="banner-stat-l">${s.l}</div></div>`).join('');
+  const tagsHtml=c.specialBenefits.map(b=>`<span class="benefit-tag" style="background:${c.gradient[0]}1a;color:${c.gradient[0]};border-color:${c.gradient[0]}33">✦ ${b}</span>`).join('');
+  // Late fee table
+  let lateFeeRows='';
+  c.latePayment.forEach(s=>{
+    const range=s.upTo!==undefined?(s.upTo===100?"Up to ₹100":`₹${s.upTo===500?101:s.upTo===5000?501:s.upTo===10000?5001:s.upTo===25000?10001:s.upTo===50000?25001:''}-₹${s.upTo}`):`Above ₹50,000`;
+    lateFeeRows+=`<tr><td>${range}</td><td style="color:${s.fee===0?'var(--green)':'var(--red)'}">₹${s.fee}</td></tr>`;
+  });
+  el.style.display='block';
+  el.style.background=`linear-gradient(135deg,${c.gradient[0]}1a,${c.gradient[1]||c.gradient[0]}0d)`;
+  el.style.borderColor=`${c.gradient[0]}44`;
+  el.innerHTML=`
+    <div class="banner-top">
+      <div>
+        <div class="banner-name" style="background:linear-gradient(90deg,${c.gradient[0]},${c.gradient[1]||c.gradient[0]});-webkit-background-clip:text;-webkit-text-fill-color:transparent">${c.name}</div>
+        <div class="banner-sub">${c.network} · ${c.tier}</div>
+      </div>
+      <div class="banner-stats">${statsHtml}</div>
+    </div>
+    <div class="benefit-tags">${tagsHtml}</div>
+    <div class="banner-footer">🛫 <b>Domestic Lounge:</b> ${c.lounge.domestic} &nbsp;·&nbsp; <b>Intl:</b> ${c.lounge.intl} &nbsp;·&nbsp; Annual fee waiver on ${feeWaiverLabel} spend</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px;padding-left:2px">ℹ️ ${c.lounge.notes}</div>
+    ${c.bmsOffer?`<div style="margin-top:8px;padding:8px 12px;background:#f5b73115;border-radius:8px;border:1px solid #f5b73130;font-size:12px"><span style="color:var(--gold);font-weight:800">🎬 BookMyShow Offer:</span> <span style="color:var(--text)">${c.bmsOffer.desc}</span></div>`:'<div style="margin-top:8px;padding:8px 12px;background:var(--s2);border-radius:8px;font-size:12px;color:var(--muted)">🎬 No BookMyShow offer on this card variant.</div>'}
+    <div class="late-fee-section">
+      <div class="late-fee-title">⚠️ Late Payment Fee Slabs (as per MITC)</div>
+      <table class="late-fee-table">
+        <thead><tr><th>Outstanding Amount</th><th>Late Fee</th></tr></thead>
+        <tbody>${lateFeeRows}</tbody>
+      </table>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">GST @ 18% applicable on all fees. Interest @ ${c.interest}%/month on revolving balance. Over-limit fee: ₹${c.overlimit} + GST.</div>
+    </div>
+  `;
+}
+
+function renderStats(){
+  const el=document.getElementById('statsGrid');
+  const c=card();
+  if(!transactions.length||!c){el.style.display='none';return;}
+  let spent=0,benefit=0,charges=0,points=0,cashback=0;
+  transactions.forEach(t=>{
+    const b=t.benefits;
+    spent+=t.amount;benefit+=b.totalBenefit;charges+=b.totalCharges;
+    points+=b.rewards;cashback+=b.cashback;
+  });
+  const kpis=[
+    {l:"Total Spent",v:`₹${spent.toLocaleString()}`,c:"var(--red)",i:"📤"},
+    {l:"Total Benefit",v:`₹${benefit.toFixed(2)}`,c:"var(--green)",i:"💎"},
+    {l:"Extra Charges",v:`₹${charges.toFixed(2)}`,c:"var(--orange)",i:"⚠️"},
+    {l:c.isMMT?"MyPoints":c.isCashback?"Cashback":"Total Pts",
+     v:c.isCashback?`₹${cashback.toFixed(2)}`:`${fmt(points)}`,c:"var(--gold)",i:"⭐"},
+  ];
+  el.style.display='grid';
+  el.innerHTML=kpis.map(k=>`
+    <div class="stat-card" style="border-left:3px solid ${k.c}">
+      <div class="stat-icon">${k.i}</div>
+      <div class="stat-val" style="color:${k.c}">${k.v}</div>
+      <div class="stat-lbl">${k.l}</div>
+    </div>`).join('');
+}
+
+function renderTxns(){
+  filterCat=document.getElementById('filterCat').value;
+  const filtered=filterCat==="all"?transactions:transactions.filter(t=>t.category===filterCat);
+  const c=card();
+  const el=document.getElementById('txnList');
+  document.getElementById('filterCount').textContent=`${filtered.length} transaction${filtered.length!==1?"s":""}`;
+  if(!transactions.length){
+    el.innerHTML=`<div class="empty-txn">
+      <div class="empty-txn-icon">📋</div>
+      <div class="empty-txn-title">No Transactions Yet</div>
+      <div class="empty-txn-sub">Click <b style="color:var(--green)">+ Add Transaction</b> to enter your first transaction</div>
+      <button class="btn-primary" onclick="openModal()">+ Add First Transaction</button>
+    </div>`;
+    return;
+  }
+  el.innerHTML=filtered.map(txn=>{
+    const cat=CAT_MAP[txn.category]||CAT_MAP.other;
+    const b=txn.benefits;
+    const open=expandedId===txn.id;
+    let badges='';
+    if(b.rewards>0&&!b.exclusionReason) badges+=`<span class="badge badge-gold">⭐ ${fmt(b.rewards)} ${c.isMMT?"MyPts":"pts"}</span>`;
+    if(b.cashback>0) badges+=`<span class="badge badge-purple">💜 ₹${b.cashback.toFixed(2)}</span>`;
+    if(b.totalCharges>0) badges+=`<span class="badge badge-red">⚠️ -₹${b.totalCharges.toFixed(2)}</span>`;
+    if(b.exclusionReason) badges+=`<span class="badge badge-red-plain">✕ No reward</span>`;
+    let detail='';
+    if(open){
+      // Benefits rows
+      const benRows=b.breakdown.length?b.breakdown.map(r=>`
+        <div class="detail-row">
+          <span class="detail-row-lbl">${r.label}</span>
+          <span class="detail-row-val" style="color:${r.val&&r.val.startsWith&&r.val.startsWith("+")?'var(--green)':'var(--text)'}">${r.val}</span>
+        </div>`).join(''):`<div style="font-size:12px;color:var(--muted);padding:6px 0">${b.exclusionReason||"No benefit applicable"}</div>`;
+      const benTotal=b.totalBenefit>0?`<div class="detail-total" style="background:#2dd4a018"><span style="color:var(--muted)">Total Benefit</span><span style="font-weight:900;color:var(--green)">+₹${b.totalBenefit.toFixed(2)}</span></div>`:'';
+      // Charges rows
+      const chgRows=b.chargesBreakdown.length?b.chargesBreakdown.map(r=>`
+        <div class="detail-row">
+          <span class="detail-row-lbl">${r.label}</span>
+          <span class="detail-row-val" style="color:${r.neg?'var(--red)':'var(--text)'}">${r.val}</span>
+        </div>`).join(''):`<div style="font-size:12px;color:var(--green);padding:6px 0">✅ No extra charges</div>`;
+      const excl=b.exclusionReason?`<div style="margin-top:8px;padding:7px 11px;background:#f0525218;border-radius:7px;font-size:12px;color:var(--red)">✕ ${b.exclusionReason}</div>`:'';
+      const chgTotal=b.totalCharges>0?`<div class="detail-total" style="background:#f0525215"><span style="color:var(--muted)">Total Charges</span><span style="font-weight:900;color:var(--red)">-₹${b.totalCharges.toFixed(2)}</span></div>`:'';
+      // MITC notes
+      const mitc=b.mitcNotes.length?`<div class="mitc-notes">${b.mitcNotes.map(n=>`<div class="mitc-note">📜 ${n}</div>`).join('')}</div>`:'';
+      // Net
+      const net=txn.amount+b.totalCharges-b.totalBenefit;
+      const netLabel=b.totalBenefit>b.totalCharges?`(saved ₹${(b.totalBenefit-b.totalCharges).toFixed(2)})`:b.totalCharges>0?`(extra ₹${(b.totalCharges-b.totalBenefit).toFixed(2)})`:'';
+      const netCol=b.totalBenefit>b.totalCharges?'var(--green)':b.totalCharges>0?'var(--red)':'var(--muted)';
+      detail=`<div class="detail-panel">
+        <div class="detail-grid">
+          <div>
+            <div class="detail-section-title" style="color:var(--green)">✦ Benefits</div>
+            ${benRows}${benTotal}
+          </div>
+          <div>
+            <div class="detail-section-title" style="color:var(--orange)">⚠ Charges</div>
+            ${chgRows}${excl}${chgTotal}
+          </div>
+        </div>
+        <div class="net-row">
+          <span class="net-lbl">Net Effective Cost</span>
+          <span class="net-val">₹${net.toFixed(2)} <span style="font-size:11px;margin-left:8px;color:${netCol}">${netLabel}</span></span>
+        </div>
+        ${mitc}
+      </div>`;
+    }
+    return `<div class="txn-card">
+      <div class="txn-row" onclick="toggleExpand(${txn.id})">
+        <div style="flex:1;min-width:120px">
+          <div class="txn-desc">${txn.desc}</div>
+          <div class="txn-meta">${txn.date} · ${cat.icon} ${cat.label}${txn.isUPI?'<span style="margin-left:5px;color:var(--purple)">📲 UPI</span>':''}${txn.isPrime?'<span style="margin-left:5px;color:var(--gold)">★ Prime</span>':''}</div>
+        </div>
+        <div class="txn-badges">
+          ${badges}
+          <span class="txn-amount">-₹${txn.amount.toLocaleString()}</span>
+          <button class="txn-del" onclick="deleteTxn(event,${txn.id})">🗑</button>
+          <span class="txn-toggle">${open?"▲":"▼"}</span>
+        </div>
+      </div>
+      ${detail}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════════════════════
+function selectCard(id){
+  selectedCardId=id;
+  transactions=[];
+  expandedId=null;
+  filterCat="all";
+  document.getElementById('filterCat').value='all';
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('step2').style.display='block';
+  document.getElementById('btnAddTxn').style.display='';
+  renderCardSelector();
+  renderCardBanner();
+  renderStats();
+  document.getElementById('filterRow').style.display='none';
+  renderTxns();
+}
+
+function toggleExpand(id){
+  expandedId=expandedId===id?null:id;
+  renderTxns();
+}
+
+function deleteTxn(e,id){
+  e.stopPropagation();
+  transactions=transactions.filter(t=>t.id!==id);
+  if(expandedId===id) expandedId=null;
+  renderStats();
+  if(transactions.length) document.getElementById('filterRow').style.display='flex';
+  else document.getElementById('filterRow').style.display='none';
+  renderTxns();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════
+function openModal(){
+  const c=card();
+  if(!c) return;
+  document.getElementById('modalOverlay').style.display='flex';
+  document.getElementById('fDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('fDesc').value='';
+  document.getElementById('fAmount').value='';
+  document.getElementById('fCategory').value='shopping';
+  document.getElementById('formErr').style.display='none';
+  document.getElementById('previewBox').style.display='none';
+  document.getElementById('modalCardLabel').textContent=`Card: ${c.name}`;
+  // Populate categories
+  const sel=document.getElementById('fCategory');
+  sel.innerHTML=CATEGORIES.map(cat=>`<option value="${cat.key}">${cat.icon} ${cat.label}</option>`).join('');
+  updateFlags();
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').style.display='none';
+}
+
+function updateFlags(){
+  const c=card();
+  const el=document.getElementById('flagsContent');
+  let html='';
+  if(c.isRuPay){
+    const checked=document.getElementById('fIsUPI')&&document.getElementById('fIsUPI').checked?'checked':'';
+    html+=`<label class="flag-row"><input type="checkbox" id="fIsUPI" ${checked} onchange="updatePreview()"> 📲 Paid via UPI (RuPay CC UPI — for 1% cashback)</label>`;
+  }
+  if(c.isCashback){
+    const checked=document.getElementById('fIsPrime')&&document.getElementById('fIsPrime').checked?'checked':'';
+    html+=`<label class="flag-row"><input type="checkbox" id="fIsPrime" ${checked} onchange="updatePreview()"> ★ Amazon Prime member (earns 5% instead of 3%)</label>`;
+  }
+  if(!c.isRuPay&&!c.isCashback) html=`<div style="font-size:12px;color:var(--muted)">No special flags needed for this card type.</div>`;
+  el.innerHTML=html;
+}
+
+function updatePreview(){
+  const c=card();
+  const amt=parseFloat(document.getElementById('fAmount').value);
+  const cat=document.getElementById('fCategory').value;
+  const isUPI=document.getElementById('fIsUPI')&&document.getElementById('fIsUPI').checked||false;
+  const isPrime=document.getElementById('fIsPrime')&&document.getElementById('fIsPrime').checked||false;
+  if(!c||!amt||amt<=0){document.getElementById('previewBox').style.display='none';return;}
+  const prev=calcBenefits(c,{amount:amt,category:cat,isUPI,isPrime});
+  const el=document.getElementById('previewContent');
+  document.getElementById('previewBox').style.display='block';
+  if(prev.exclusionReason){
+    el.innerHTML=`<div style="font-size:12px;color:var(--red)">✕ ${prev.exclusionReason}</div>`;return;
+  }
+  let html='<div class="preview-badges">';
+  if(prev.rewards>0) html+=`<span class="badge badge-gold">⭐ ${fmt(prev.rewards)} ${c.isMMT?"MyPts":"pts"} = ₹${(prev.rewards*(c.isMMT?c.myPointValue:c.pointValue)||0).toFixed(2)}</span>`;
+  if(prev.cashback>0) html+=`<span class="badge badge-purple">💜 ₹${prev.cashback.toFixed(2)} cashback</span>`;
+  if(prev.surchargeWaived>0) html+=`<span class="badge" style="background:#f7971e20;color:var(--orange);border-color:#f7971e40">⛽ ₹${prev.surchargeWaived.toFixed(2)} waiver</span>`;
+  if(prev.totalCharges>0) html+=`<span class="badge badge-red">⚠️ -₹${prev.totalCharges.toFixed(2)} charge</span>`;
+  if(prev.totalBenefit===0&&prev.totalCharges===0&&!prev.exclusionReason) html+=`<span style="font-size:12px;color:var(--muted)">Amount below ₹100 — 0 points earned</span>`;
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function saveTxn(){
+  const c=card();
+  const desc=document.getElementById('fDesc').value.trim();
+  const amt=parseFloat(document.getElementById('fAmount').value);
+  const cat=document.getElementById('fCategory').value;
+  const date=document.getElementById('fDate').value;
+  const isUPI=document.getElementById('fIsUPI')&&document.getElementById('fIsUPI').checked||false;
+  const isPrime=document.getElementById('fIsPrime')&&document.getElementById('fIsPrime').checked||false;
+  const errEl=document.getElementById('formErr');
+  if(!desc){errEl.style.display='';errEl.textContent='⚠️ Description required';return;}
+  if(!amt||isNaN(amt)||amt<=0){errEl.style.display='';errEl.textContent='⚠️ Enter valid amount';return;}
+  errEl.style.display='none';
+  const txn={id:Date.now(),date,desc,amount:amt,category:cat,isUPI,isPrime,cardId:c.id};
+  txn.benefits=calcBenefits(c,txn);
+  transactions.unshift(txn);
+  expandedId=txn.id;
+  closeModal();
+  renderStats();
+  document.getElementById('filterRow').style.display='flex';
+  renderTxns();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+renderCardSelector();
+// Populate filter dropdown
+const filterSel=document.getElementById('filterCat');
+CATEGORIES.forEach(c=>{
+  const o=document.createElement('option');
+  o.value=c.key;o.textContent=`${c.icon} ${c.label}`;
+  filterSel.appendChild(o);
+});
+</script>
+</body>
+</html>
